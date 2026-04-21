@@ -37,15 +37,17 @@ export default function DashboardPage() {
     const load = async () => {
       try {
         // Perfumes — visíveis para todos
-        const { data: perfumes } = await supabase
+        const { data: perfumesRaw } = await supabase
           .from('perfumes')
           .select('preco_base, quantidade_estoque')
           .eq('ativo', true)
 
-        const totalEstoque = (perfumes ?? []).reduce(
+        const perfumes = (perfumesRaw ?? []) as { preco_base: number; quantidade_estoque: number }[]
+
+        const totalEstoque = perfumes.reduce(
           (acc, p) => acc + p.quantidade_estoque, 0
         )
-        const valorEmEstoque = (perfumes ?? []).reduce(
+        const valorEmEstoque = perfumes.reduce(
           (acc, p) => acc + p.preco_base * p.quantidade_estoque, 0
         )
 
@@ -59,7 +61,7 @@ export default function DashboardPage() {
           .select('preco_praticado, quantidade')
           .gte('data_venda', umaSemanaAtras.toISOString())
 
-        const vendasSemana = (vendasSemanaRaw ?? []).reduce(
+        const vendasSemana = ((vendasSemanaRaw ?? []) as { preco_praticado: number; quantidade: number }[]).reduce(
           (acc, v) => acc + v.preco_praticado * v.quantidade, 0
         )
 
@@ -69,12 +71,12 @@ export default function DashboardPage() {
           .select('valor')
           .in('status', ['pendente', 'atrasado'])
 
-        const totalReceber = (parcelasPendentes ?? []).reduce(
+        const totalReceber = ((parcelasPendentes ?? []) as { valor: number }[]).reduce(
           (acc, p) => acc + p.valor, 0
         )
 
         // Últimas vendas — RLS filtra automaticamente por perfil
-        const { data: ultimasVendas } = await supabase
+        const { data: ultimasVendasRaw } = await supabase
           .from('vendas')
           .select(`
             *,
@@ -85,12 +87,14 @@ export default function DashboardPage() {
           .order('criado_em', { ascending: false })
           .limit(5)
 
+        const ultimasVendas = (ultimasVendasRaw ?? []) as Venda[]
+
         setData({
           totalEstoque,
           valorEmEstoque,
           vendasSemana,
           totalReceber,
-          ultimasVendas: ultimasVendas ?? [],
+          ultimasVendas,
         })
       } catch {
         // erro de rede

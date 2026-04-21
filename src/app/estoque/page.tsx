@@ -47,7 +47,7 @@ export default function EstoquePage() {
         .select('*')
         .eq('ativo', true)
         .order('nome')
-      setPerfumes(data ?? [])
+      setPerfumes((data ?? []) as Perfume[])
     } catch {
       // erro de rede (ex: Supabase pausado)
     } finally {

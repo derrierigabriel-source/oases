@@ -50,10 +50,10 @@ export default function NovaVendaPage() {
 
   useEffect(() => {
     supabase.from('perfumes').select('*').eq('ativo', true).order('nome').then(({ data }) => {
-      setPerfumes(data ?? [])
+      setPerfumes((data ?? []) as Perfume[])
     })
     supabase.from('clientes').select('*').order('nome').then(({ data }) => {
-      setClientes(data ?? [])
+      setClientes((data ?? []) as Cliente[])
     })
   }, [])
 

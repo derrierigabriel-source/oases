@@ -102,7 +102,7 @@ export default function VendasPage() {
       }
 
       const { data } = await query
-      setVendas(data ?? [])
+      setVendas((data ?? []) as Venda[])
     } catch {
       // erro de rede
     } finally {
@@ -126,7 +126,7 @@ export default function VendasPage() {
       .select('*')
       .eq('venda_id', id)
       .order('numero_parcela')
-    setExpandedParcelas(data ?? [])
+    setExpandedParcelas((data ?? []) as Parcela[])
   }
 
   return (
