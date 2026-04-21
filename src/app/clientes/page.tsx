@@ -113,14 +113,15 @@ export default function ClientesPage() {
   const toggleExpand = async (id: string) => {
     if (expandedId === id) { setExpandedId(null); return }
     setExpandedId(id)
-    const { data: vendas } = await supabase
+    const { data: vendasData } = await supabase
       .from('vendas')
       .select('*, perfume:perfumes(nome, marca)')
       .eq('cliente_id', id)
       .order('data_venda', { ascending: false })
       .limit(10)
 
-    const vendaIds = (vendas ?? []).map((v) => v.id)
+    const vendas = (vendasData ?? []) as Venda[]
+    const vendaIds = vendas.map((v) => v.id)
     let parcelas: Parcela[] = []
     if (vendaIds.length > 0) {
       const { data } = await supabase
@@ -128,9 +129,9 @@ export default function ClientesPage() {
         .select('*')
         .in('venda_id', vendaIds)
         .in('status', ['pendente', 'atrasado'])
-      parcelas = data ?? []
+      parcelas = (data ?? []) as Parcela[]
     }
-    setExpandedData({ vendas: vendas ?? [], parcelas })
+    setExpandedData({ vendas, parcelas })
   }
 
   return (
