@@ -1,7 +1,13 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient as _createClient } from '@supabase/supabase-js'
+
+let _client: ReturnType<typeof _createClient> | null = null
 
 export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co'
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder'
-  return createBrowserClient(url, key)
+  if (!_client) {
+    _client = _createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return _client
 }

@@ -35,45 +35,50 @@ export default function ClientesPage() {
   const [expandedData, setExpandedData] = useState<{ vendas: Venda[]; parcelas: Parcela[] }>({ vendas: [], parcelas: [] })
 
   const load = async () => {
-    const { data: clientesRaw } = await supabase
-      .from('clientes')
-      .select('*')
-      .order('nome')
+    try {
+      const { data: clientesRaw } = await supabase
+        .from('clientes')
+        .select('*')
+        .order('nome')
 
-    if (!clientesRaw) { setLoading(false); return }
+      if (!clientesRaw) return
 
-    // Buscar saldos
-    const { data: parcelas } = await supabase
-      .from('parcelas')
-      .select('valor, status, venda:vendas(cliente_id)')
-      .in('status', ['pendente', 'atrasado'])
+      // Buscar saldos
+      const { data: parcelas } = await supabase
+        .from('parcelas')
+        .select('valor, status, venda:vendas(cliente_id)')
+        .in('status', ['pendente', 'atrasado'])
 
-    const saldoMap: Record<string, number> = {}
-    ;(parcelas ?? []).forEach((p: any) => {
-      const clienteId = p.venda?.cliente_id
-      if (clienteId) {
-        saldoMap[clienteId] = (saldoMap[clienteId] ?? 0) + p.valor
-      }
-    })
+      const saldoMap: Record<string, number> = {}
+      ;(parcelas ?? []).forEach((p: any) => {
+        const clienteId = p.venda?.cliente_id
+        if (clienteId) {
+          saldoMap[clienteId] = (saldoMap[clienteId] ?? 0) + p.valor
+        }
+      })
 
-    // Buscar total de compras
-    const { data: vendasTotal } = await supabase
-      .from('vendas')
-      .select('cliente_id, preco_praticado, quantidade')
+      // Buscar total de compras
+      const { data: vendasTotal } = await supabase
+        .from('vendas')
+        .select('cliente_id, preco_praticado, quantidade')
 
-    const totalMap: Record<string, number> = {}
-    ;(vendasTotal ?? []).forEach((v: any) => {
-      totalMap[v.cliente_id] = (totalMap[v.cliente_id] ?? 0) + v.preco_praticado * v.quantidade
-    })
+      const totalMap: Record<string, number> = {}
+      ;(vendasTotal ?? []).forEach((v: any) => {
+        totalMap[v.cliente_id] = (totalMap[v.cliente_id] ?? 0) + v.preco_praticado * v.quantidade
+      })
 
-    setClientes(
-      clientesRaw.map((c) => ({
-        ...c,
-        saldo_pendente: saldoMap[c.id] ?? 0,
-        total_compras: totalMap[c.id] ?? 0,
-      }))
-    )
-    setLoading(false)
+      setClientes(
+        clientesRaw.map((c) => ({
+          ...c,
+          saldo_pendente: saldoMap[c.id] ?? 0,
+          total_compras: totalMap[c.id] ?? 0,
+        }))
+      )
+    } catch {
+      // erro de rede (ex: Supabase pausado)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])

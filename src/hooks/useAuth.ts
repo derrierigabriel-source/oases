@@ -12,40 +12,35 @@ export function useAuth() {
   const supabase = createClient()
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
 
-      if (user) {
-        const { data } = await supabase
+      if (session?.user) {
+        supabase
           .from('vendedores')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single()
-        setVendedor(data)
+          .then(({ data }) => setVendedor(data))
       }
-
-      setLoading(false)
-    }
-
-    getUser()
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null)
 
-        if (session?.user) {
-          const { data } = await supabase
-            .from('vendedores')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-          setVendedor(data)
-        } else {
+        if (!session?.user) {
           setVendedor(null)
+          return
         }
 
-        setLoading(false)
+        supabase
+          .from('vendedores')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => setVendedor(data))
       }
     )
 
@@ -54,12 +49,14 @@ export function useAuth() {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    window.location.href = '/login'
   }
 
   return {
     user,
     vendedor,
     perfil: vendedor?.perfil ?? null,
+    isAdmin: vendedor?.perfil === 'admin',
     loading,
     signOut,
   }

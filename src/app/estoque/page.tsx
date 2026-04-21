@@ -3,15 +3,16 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { Plus, Search, Pencil, AlertTriangle, Minus, Package } from 'lucide-react'
+import { Plus, Search, Pencil, Minus, Package } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 import { Perfume } from '@/lib/types'
+import { useAuth } from '@/hooks/useAuth'
 import AppLayout from '@/components/layout/AppLayout'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
-import Badge from '@/components/ui/Badge'
 
 const emptyForm = {
   nome: '',
@@ -19,7 +20,7 @@ const emptyForm = {
   tamanho_ml: '',
   quantidade_estoque: '',
   preco_base: '',
-  quantidade_minima_alerta: '2',
+  custo: '',
 }
 
 function formatCurrency(v: number) {
@@ -28,6 +29,8 @@ function formatCurrency(v: number) {
 
 export default function EstoquePage() {
   const supabase = createClient()
+  const router = useRouter()
+  const { isAdmin } = useAuth()
   const [perfumes, setPerfumes] = useState<Perfume[]>([])
   const [filtered, setFiltered] = useState<Perfume[]>([])
   const [search, setSearch] = useState('')
@@ -38,13 +41,18 @@ export default function EstoquePage() {
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    const { data } = await supabase
-      .from('perfumes')
-      .select('*')
-      .eq('ativo', true)
-      .order('nome')
-    setPerfumes(data ?? [])
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('perfumes')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome')
+      setPerfumes(data ?? [])
+    } catch {
+      // erro de rede (ex: Supabase pausado)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])
@@ -78,7 +86,7 @@ export default function EstoquePage() {
       tamanho_ml: String(p.tamanho_ml),
       quantidade_estoque: String(p.quantidade_estoque),
       preco_base: String(p.preco_base),
-      quantidade_minima_alerta: String(p.quantidade_minima_alerta),
+      custo: String(p.custo ?? ''),
     })
     setModalOpen(true)
   }
@@ -92,13 +100,15 @@ export default function EstoquePage() {
 
     setSaving(true)
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         nome: form.nome.trim(),
         marca: form.marca.trim(),
         tamanho_ml: parseInt(form.tamanho_ml),
         quantidade_estoque: parseInt(form.quantidade_estoque) || 0,
         preco_base: parseFloat(form.preco_base),
-        quantidade_minima_alerta: parseInt(form.quantidade_minima_alerta) || 2,
+      }
+      if (form.custo !== '') {
+        payload.custo = parseFloat(form.custo)
       }
 
       if (editing) {
@@ -151,10 +161,12 @@ export default function EstoquePage() {
               {perfumes.length} {perfumes.length === 1 ? 'perfume' : 'perfumes'} cadastrados
             </p>
           </div>
-          <Button onClick={openNew}>
-            <Plus size={16} />
-            Adicionar
-          </Button>
+          {isAdmin && (
+            <Button onClick={openNew}>
+              <Plus size={16} />
+              Adicionar
+            </Button>
+          )}
         </div>
 
         {/* Search */}
@@ -185,69 +197,63 @@ export default function EstoquePage() {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((p) => {
-              const critico = p.quantidade_estoque <= p.quantidade_minima_alerta
-              return (
-                <div
-                  key={p.id}
-                  className={`
-                    bg-brand-card border rounded-xl p-5 flex flex-col gap-3 animate-fadeIn
-                    ${critico ? 'border-red-800/40' : 'border-brand-border'}
-                  `}
-                >
-                  {/* Top */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-brand-text truncate">{p.nome}</p>
-                      <p className="text-xs text-brand-muted mt-0.5">
-                        {p.marca} · {p.tamanho_ml}ml
-                      </p>
-                    </div>
+            {filtered.map((p) => (
+              <div
+                key={p.id}
+                onClick={() => router.push(`/estoque/${p.id}`)}
+                className="bg-brand-card border border-brand-border rounded-xl p-5 flex flex-col gap-3 animate-fadeIn cursor-pointer hover:border-brand-gold/40 transition-colors"
+              >
+                {/* Top */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-brand-text truncate">{p.nome}</p>
+                    <p className="text-xs text-brand-muted mt-0.5">
+                      {p.marca} · {p.tamanho_ml}ml
+                    </p>
+                  </div>
+                  {isAdmin && (
                     <button
-                      onClick={() => openEdit(p)}
+                      onClick={(e) => { e.stopPropagation(); openEdit(p) }}
                       className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-surface transition-colors shrink-0"
                     >
                       <Pencil size={14} />
                     </button>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Price */}
-                  <p className="text-brand-gold font-semibold text-lg">
-                    {formatCurrency(p.preco_base)}
-                  </p>
+                {/* Price */}
+                <p className="text-brand-gold font-semibold text-lg">
+                  {formatCurrency(p.preco_base)}
+                </p>
 
-                  {/* Stock */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {critico && (
-                        <Badge status="critico" className="mb-1" />
-                      )}
-                      <p className="text-xs text-brand-muted">
-                        mín: {p.quantidade_minima_alerta} un
-                      </p>
-                    </div>
+                {/* Stock */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-brand-muted">
+                    {p.quantidade_estoque} un em estoque
+                  </span>
+                  {isAdmin && (
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => ajustarEstoque(p.id, -1)}
+                        onClick={(e) => { e.stopPropagation(); ajustarEstoque(p.id, -1) }}
                         disabled={p.quantidade_estoque === 0}
                         className="w-7 h-7 flex items-center justify-center rounded-lg bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-text hover:border-brand-muted disabled:opacity-30 transition-colors"
                       >
                         <Minus size={12} />
                       </button>
-                      <span className={`text-lg font-bold w-8 text-center ${critico ? 'text-red-400' : 'text-brand-text'}`}>
+                      <span className="text-lg font-bold w-8 text-center text-brand-text">
                         {p.quantidade_estoque}
                       </span>
                       <button
-                        onClick={() => ajustarEstoque(p.id, 1)}
+                        onClick={(e) => { e.stopPropagation(); ajustarEstoque(p.id, 1) }}
                         className="w-7 h-7 flex items-center justify-center rounded-lg bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-gold hover:border-brand-gold/50 transition-colors"
                       >
                         <Plus size={12} />
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -292,9 +298,9 @@ export default function EstoquePage() {
               onChange={(e) => setForm({ ...form, quantidade_estoque: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <Input
-              label="Preço base (R$) *"
+              label="Valor de Venda (R$) *"
               type="number"
               placeholder="0,00"
               min="0"
@@ -303,14 +309,17 @@ export default function EstoquePage() {
               onChange={(e) => setForm({ ...form, preco_base: e.target.value })}
               required
             />
-            <Input
-              label="Alerta mínimo (un)"
-              type="number"
-              placeholder="2"
-              min="0"
-              value={form.quantidade_minima_alerta}
-              onChange={(e) => setForm({ ...form, quantidade_minima_alerta: e.target.value })}
-            />
+            {isAdmin && (
+              <Input
+                label="Custo (R$)"
+                type="number"
+                placeholder="0,00"
+                min="0"
+                step="0.01"
+                value={form.custo}
+                onChange={(e) => setForm({ ...form, custo: e.target.value })}
+              />
+            )}
           </div>
           <div className="flex gap-3 pt-2">
             <Button

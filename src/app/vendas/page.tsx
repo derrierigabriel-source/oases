@@ -4,11 +4,12 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, ChevronDown, ChevronUp, Filter, ShoppingBag } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, Filter, ShoppingBag, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase'
-import { Venda, Parcela } from '@/lib/types'
+import { Venda, Parcela, Perfume, Cliente, Vendedor } from '@/lib/types'
+import { useAuth } from '@/hooks/useAuth'
 import AppLayout from '@/components/layout/AppLayout'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -25,40 +26,94 @@ const formaLabel: Record<string, string> = {
 
 export default function VendasPage() {
   const supabase = createClient()
+  const { isAdmin } = useAuth()
+
   const [vendas, setVendas] = useState<Venda[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [expandedParcelas, setExpandedParcelas] = useState<Parcela[]>([])
-  const [filterStatus, setFilterStatus] = useState<string>('')
-  const [filterDate, setFilterDate] = useState<string>('')
 
-  const load = async () => {
-    let query = supabase
-      .from('vendas')
-      .select(`
-        *,
-        cliente:clientes(nome, telefone_whatsapp),
-        perfume:perfumes(nome, marca, tamanho_ml),
-        vendedor:vendedores(nome)
-      `)
-      .order('criado_em', { ascending: false })
-      .limit(100)
+  // Listas para os selects de filtro
+  const [perfumes, setPerfumes] = useState<Perfume[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [vendedores, setVendedores] = useState<Vendedor[]>([])
 
-    if (filterStatus) query = query.eq('status_pagamento', filterStatus)
-    if (filterDate) {
-      const start = new Date(filterDate)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(filterDate)
-      end.setHours(23, 59, 59, 999)
-      query = query.gte('data_venda', start.toISOString()).lte('data_venda', end.toISOString())
-    }
+  // Filtros
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterDate, setFilterDate] = useState('')
+  const [filterPerfume, setFilterPerfume] = useState('')
+  const [filterCliente, setFilterCliente] = useState('')
+  const [filterVendedor, setFilterVendedor] = useState('')
+  const [filterForma, setFilterForma] = useState('')
 
-    const { data } = await query
-    setVendas(data ?? [])
-    setLoading(false)
+  const temFiltroAtivo = Boolean(
+    filterStatus || filterDate || filterPerfume ||
+    filterCliente || filterVendedor || filterForma
+  )
+
+  const limparFiltros = () => {
+    setFilterStatus('')
+    setFilterDate('')
+    setFilterPerfume('')
+    setFilterCliente('')
+    setFilterVendedor('')
+    setFilterForma('')
   }
 
-  useEffect(() => { load() }, [filterStatus, filterDate])
+  // Carrega listas de filtros uma vez
+  useEffect(() => {
+    supabase.from('perfumes').select('id, nome, marca').eq('ativo', true).order('nome').then(({ data }) => {
+      setPerfumes((data as Perfume[]) ?? [])
+    })
+    supabase.from('clientes').select('id, nome').order('nome').then(({ data }) => {
+      setClientes((data as Cliente[]) ?? [])
+    })
+    supabase.from('vendedores').select('id, nome').eq('ativo', true).order('nome').then(({ data }) => {
+      setVendedores((data as Vendedor[]) ?? [])
+    })
+  }, [])
+
+  const load = async () => {
+    try {
+      let query = supabase
+        .from('vendas')
+        .select(`
+          *,
+          cliente:clientes(nome, telefone_whatsapp),
+          perfume:perfumes(nome, marca, tamanho_ml),
+          vendedor:vendedores(nome)
+        `)
+        .order('criado_em', { ascending: false })
+        .limit(100)
+
+      if (filterStatus) query = query.eq('status_pagamento', filterStatus)
+      if (filterForma) query = query.eq('forma_pagamento', filterForma)
+      if (filterPerfume) query = query.eq('perfume_id', filterPerfume)
+      if (filterCliente) query = query.eq('cliente_id', filterCliente)
+      if (filterVendedor) query = query.eq('vendedor_id', filterVendedor)
+      if (filterDate) {
+        const start = new Date(filterDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(filterDate)
+        end.setHours(23, 59, 59, 999)
+        query = query
+          .gte('data_venda', start.toISOString())
+          .lte('data_venda', end.toISOString())
+      }
+
+      const { data } = await query
+      setVendas(data ?? [])
+    } catch {
+      // erro de rede
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    load()
+  }, [filterStatus, filterDate, filterPerfume, filterCliente, filterVendedor, filterForma])
 
   const toggleExpand = async (id: string) => {
     if (expandedId === id) {
@@ -91,36 +146,100 @@ export default function VendasPage() {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-brand-muted text-sm">
-            <Filter size={14} />
-            Filtros:
+        {/* Filtros */}
+        <div className="bg-brand-card border border-brand-border rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-brand-muted text-sm">
+              <Filter size={14} />
+              <span className="font-medium">Filtros</span>
+              {temFiltroAtivo && (
+                <span className="bg-brand-gold text-black text-xs font-semibold rounded-full px-1.5 py-0.5">
+                  {[filterStatus, filterDate, filterPerfume, filterCliente, filterVendedor, filterForma].filter(Boolean).length}
+                </span>
+              )}
+            </div>
+            {temFiltroAtivo && (
+              <button
+                onClick={limparFiltros}
+                className="flex items-center gap-1 text-xs text-brand-gold hover:text-brand-gold-dark transition-colors"
+              >
+                <X size={12} />
+                Limpar filtros
+              </button>
+            )}
           </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-1.5 bg-brand-card border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
-          >
-            <option value="">Todos os status</option>
-            <option value="pago">Pago</option>
-            <option value="pendente">Pendente</option>
-            <option value="parcial">Parcial</option>
-          </select>
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="px-3 py-1.5 bg-brand-card border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
-          />
-          {(filterStatus || filterDate) && (
-            <button
-              onClick={() => { setFilterStatus(''); setFilterDate('') }}
-              className="text-xs text-brand-gold hover:text-brand-gold-dark"
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {/* Produto */}
+            <select
+              value={filterPerfume}
+              onChange={(e) => setFilterPerfume(e.target.value)}
+              className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40 col-span-1"
             >
-              Limpar filtros
-            </button>
-          )}
+              <option value="">Todos os produtos</option>
+              {perfumes.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
+            </select>
+
+            {/* Cliente */}
+            <select
+              value={filterCliente}
+              onChange={(e) => setFilterCliente(e.target.value)}
+              className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+            >
+              <option value="">Todos os clientes</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nome}</option>
+              ))}
+            </select>
+
+            {/* Vendedor — apenas admin */}
+            {isAdmin && (
+              <select
+                value={filterVendedor}
+                onChange={(e) => setFilterVendedor(e.target.value)}
+                className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+              >
+                <option value="">Todos os vendedores</option>
+                {vendedores.map((v) => (
+                  <option key={v.id} value={v.id}>{v.nome}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Forma de pagamento */}
+            <select
+              value={filterForma}
+              onChange={(e) => setFilterForma(e.target.value)}
+              className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+            >
+              <option value="">Todas as formas</option>
+              <option value="a_vista">À vista</option>
+              <option value="parcelado">Parcelado</option>
+              <option value="fiado">Fiado</option>
+            </select>
+
+            {/* Status */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+            >
+              <option value="">Todos os status</option>
+              <option value="pago">Pago</option>
+              <option value="pendente">Pendente</option>
+              <option value="parcial">Parcial</option>
+            </select>
+
+            {/* Data */}
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="px-3 py-2 bg-brand-surface border border-brand-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+            />
+          </div>
         </div>
 
         {/* List */}
@@ -133,7 +252,17 @@ export default function VendasPage() {
         ) : vendas.length === 0 ? (
           <div className="text-center py-16 text-brand-muted">
             <ShoppingBag size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Nenhuma venda encontrada.</p>
+            <p className="text-sm">
+              {temFiltroAtivo ? 'Nenhuma venda encontrada com os filtros aplicados.' : 'Nenhuma venda encontrada.'}
+            </p>
+            {temFiltroAtivo && (
+              <button
+                onClick={limparFiltros}
+                className="mt-3 text-brand-gold hover:text-brand-gold-dark text-sm"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

@@ -43,21 +43,23 @@ export default function StatCard({
   return (
     <div
       className={`
-        bg-brand-card border rounded-xl p-5 flex items-start gap-4
+        bg-brand-card border rounded-xl p-4 sm:p-5 flex items-start gap-3 overflow-hidden
         animate-fadeIn
         ${style.card}
       `}
     >
-      <div className={`p-2.5 rounded-lg shrink-0 ${style.icon}`}>
-        <Icon size={20} />
+      <div className={`p-2 sm:p-2.5 rounded-lg shrink-0 ${style.icon}`}>
+        <Icon size={18} />
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-brand-muted uppercase tracking-wider">
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <p className="text-xs font-medium text-brand-muted uppercase tracking-wider truncate">
           {title}
         </p>
-        <p className={`text-2xl font-semibold mt-1 ${style.value}`}>{value}</p>
+        <p className={`text-lg sm:text-2xl font-semibold mt-1 truncate ${style.value}`}>
+          {value}
+        </p>
         {subtitle && (
-          <p className="text-xs text-brand-muted mt-0.5">{subtitle}</p>
+          <p className="text-xs text-brand-muted mt-0.5 truncate">{subtitle}</p>
         )}
       </div>
     </div>

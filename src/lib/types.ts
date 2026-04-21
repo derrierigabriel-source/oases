@@ -5,6 +5,7 @@ export interface Perfume {
   tamanho_ml: number
   quantidade_estoque: number
   preco_base: number
+  custo: number | null
   foto_url: string | null
   quantidade_minima_alerta: number
   ativo: boolean

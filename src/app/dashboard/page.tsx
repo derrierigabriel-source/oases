@@ -4,19 +4,20 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Package, AlertTriangle, TrendingUp, CreditCard, ChevronRight, Clock } from 'lucide-react'
+import { Package, DollarSign, TrendingUp, CreditCard, ChevronRight, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase'
-import { Perfume, Venda } from '@/lib/types'
+import { Venda } from '@/lib/types'
+import { useAuth } from '@/hooks/useAuth'
 import AppLayout from '@/components/layout/AppLayout'
 import StatCard from '@/components/dashboard/StatCard'
 import Badge from '@/components/ui/Badge'
 
 interface DashboardData {
   totalEstoque: number
-  perfumesCriticos: Perfume[]
-  vendasHoje: number
+  valorEmEstoque: number
+  vendasSemana: number
   totalReceber: number
   ultimasVendas: Venda[]
 }
@@ -27,75 +28,79 @@ function formatCurrency(value: number) {
 
 export default function DashboardPage() {
   const supabase = createClient()
+  const { user, isAdmin } = useAuth()
+
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+      try {
+        // Perfumes — visíveis para todos
+        const { data: perfumes } = await supabase
+          .from('perfumes')
+          .select('preco_base, quantidade_estoque')
+          .eq('ativo', true)
 
-      // Perfumes
-      const { data: perfumes } = await supabase
-        .from('perfumes')
-        .select('*')
-        .eq('ativo', true)
+        const totalEstoque = (perfumes ?? []).reduce(
+          (acc, p) => acc + p.quantidade_estoque, 0
+        )
+        const valorEmEstoque = (perfumes ?? []).reduce(
+          (acc, p) => acc + p.preco_base * p.quantidade_estoque, 0
+        )
 
-      const totalEstoque = (perfumes ?? []).reduce(
-        (acc, p) => acc + p.quantidade_estoque,
-        0
-      )
-      const perfumesCriticos = (perfumes ?? []).filter(
-        (p) => p.quantidade_estoque <= p.quantidade_minima_alerta
-      )
+        // Vendas na semana — RLS filtra automaticamente por perfil
+        const umaSemanaAtras = new Date()
+        umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7)
+        umaSemanaAtras.setHours(0, 0, 0, 0)
 
-      // Vendas hoje
-      const { data: vendasHojeRaw } = await supabase
-        .from('vendas')
-        .select('preco_praticado, quantidade')
-        .gte('data_venda', today.toISOString())
+        const { data: vendasSemanaRaw } = await supabase
+          .from('vendas')
+          .select('preco_praticado, quantidade')
+          .gte('data_venda', umaSemanaAtras.toISOString())
 
-      const vendasHoje = (vendasHojeRaw ?? []).reduce(
-        (acc, v) => acc + v.preco_praticado * v.quantidade,
-        0
-      )
+        const vendasSemana = (vendasSemanaRaw ?? []).reduce(
+          (acc, v) => acc + v.preco_praticado * v.quantidade, 0
+        )
 
-      // Total a receber (parcelas pendentes)
-      const { data: parcelasPendentes } = await supabase
-        .from('parcelas')
-        .select('valor')
-        .in('status', ['pendente', 'atrasado'])
+        // Parcelas a receber — RLS filtra automaticamente por perfil
+        const { data: parcelasPendentes } = await supabase
+          .from('parcelas')
+          .select('valor')
+          .in('status', ['pendente', 'atrasado'])
 
-      const totalReceber = (parcelasPendentes ?? []).reduce(
-        (acc, p) => acc + p.valor,
-        0
-      )
+        const totalReceber = (parcelasPendentes ?? []).reduce(
+          (acc, p) => acc + p.valor, 0
+        )
 
-      // Últimas 5 vendas do dia
-      const { data: ultimasVendas } = await supabase
-        .from('vendas')
-        .select(`
-          *,
-          cliente:clientes(nome),
-          perfume:perfumes(nome, marca),
-          vendedor:vendedores(nome)
-        `)
-        .gte('data_venda', today.toISOString())
-        .order('criado_em', { ascending: false })
-        .limit(5)
+        // Últimas vendas — RLS filtra automaticamente por perfil
+        const { data: ultimasVendas } = await supabase
+          .from('vendas')
+          .select(`
+            *,
+            cliente:clientes(nome),
+            perfume:perfumes(nome, marca),
+            vendedor:vendedores(nome)
+          `)
+          .order('criado_em', { ascending: false })
+          .limit(5)
 
-      setData({
-        totalEstoque,
-        perfumesCriticos,
-        vendasHoje,
-        totalReceber,
-        ultimasVendas: ultimasVendas ?? [],
-      })
-      setLoading(false)
+        setData({
+          totalEstoque,
+          valorEmEstoque,
+          vendasSemana,
+          totalReceber,
+          ultimasVendas: ultimasVendas ?? [],
+        })
+      } catch {
+        // erro de rede
+      } finally {
+        setLoading(false)
+      }
     }
 
     load()
-  }, [])
+  }, [user?.id])
 
   if (loading) {
     return (
@@ -130,16 +135,27 @@ export default function DashboardPage() {
             icon={Package}
             subtitle="unidades"
           />
+
+          {/* Admin vê valor em R$; vendedor vê contagem de itens */}
+          {isAdmin ? (
+            <StatCard
+              title="Valor em estoque"
+              value={formatCurrency(data?.valorEmEstoque ?? 0)}
+              icon={DollarSign}
+              variant="default"
+            />
+          ) : (
+            <StatCard
+              title="Itens em estoque"
+              value={data?.totalEstoque ?? 0}
+              icon={Package}
+              subtitle="unidades disponíveis"
+            />
+          )}
+
           <StatCard
-            title="Estoque crítico"
-            value={data?.perfumesCriticos.length ?? 0}
-            icon={AlertTriangle}
-            variant={data && data.perfumesCriticos.length > 0 ? 'warning' : 'default'}
-            subtitle="perfumes abaixo do mínimo"
-          />
-          <StatCard
-            title="Vendido hoje"
-            value={formatCurrency(data?.vendasHoje ?? 0)}
+            title="Vendido na semana"
+            value={formatCurrency(data?.vendasSemana ?? 0)}
             icon={TrendingUp}
             variant="gold"
           />
@@ -152,52 +168,14 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Últimas Vendas */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Estoque crítico */}
-          {data && data.perfumesCriticos.length > 0 && (
-            <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-red-400" />
-                  <h2 className="font-medium text-brand-text text-sm">
-                    Estoque crítico
-                  </h2>
-                </div>
-                <Link
-                  href="/estoque"
-                  className="text-xs text-brand-gold hover:text-brand-gold-dark flex items-center gap-1"
-                >
-                  Ver tudo <ChevronRight size={14} />
-                </Link>
-              </div>
-              <div className="divide-y divide-brand-border">
-                {data.perfumesCriticos.slice(0, 5).map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-5 py-3">
-                    <div>
-                      <p className="text-sm font-medium text-brand-text">{p.nome}</p>
-                      <p className="text-xs text-brand-muted">{p.marca} · {p.tamanho_ml}ml</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold text-red-400">
-                        {p.quantidade_estoque} un
-                      </span>
-                      <p className="text-xs text-brand-muted">
-                        mín: {p.quantidade_minima_alerta}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Últimas vendas */}
-          <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+          <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden lg:col-span-2">
             <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-brand-gold" />
                 <h2 className="font-medium text-brand-text text-sm">
-                  Últimas vendas de hoje
+                  Últimas Vendas
                 </h2>
               </div>
               <Link
@@ -210,7 +188,7 @@ export default function DashboardPage() {
 
             {data && data.ultimasVendas.length === 0 ? (
               <div className="px-5 py-8 text-center text-brand-muted text-sm">
-                Nenhuma venda hoje ainda.
+                Nenhuma venda registrada ainda.
                 <br />
                 <Link
                   href="/vendas/nova"
