@@ -23,7 +23,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { vendedor, signOut } = useAuth()
+  const { user, vendedor, signOut } = useAuth()
 
   return (
     <>
@@ -76,14 +76,14 @@ export default function Sidebar() {
         <div className="px-3 py-4">
           <div className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-lg bg-brand-card/60 border border-brand-border/50">
             <div className="w-8 h-8 rounded-full bg-brand-gold/15 border border-brand-gold/25 flex items-center justify-center text-brand-gold text-sm font-semibold shrink-0">
-              {vendedor?.nome?.charAt(0)?.toUpperCase() ?? '?'}
+              {(vendedor?.nome ?? user?.email ?? '?').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-brand-text truncate">
-                {vendedor?.nome ?? '—'}
+                {vendedor?.nome ?? user?.email ?? '—'}
               </p>
               <p className="text-[10px] text-brand-gold/70 capitalize tracking-wider">
-                {vendedor?.perfil ?? ''}
+                {vendedor?.perfil ?? 'sem perfil'}
               </p>
             </div>
           </div>
