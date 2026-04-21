@@ -114,12 +114,12 @@ export default function EstoquePage() {
       if (editing) {
         const { error } = await supabase
           .from('perfumes')
-          .update(payload)
+          .update(payload as any)
           .eq('id', editing.id)
         if (error) throw error
         toast.success('Perfume atualizado!')
       } else {
-        const { error } = await supabase.from('perfumes').insert(payload)
+        const { error } = await supabase.from('perfumes').insert(payload as any)
         if (error) throw error
         toast.success('Perfume adicionado!')
       }
