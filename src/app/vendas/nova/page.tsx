@@ -116,11 +116,11 @@ export default function NovaVendaPage() {
       }
 
       // Verificar estoque novamente
-      const { data: perfumeAtual } = await supabase
+      const { data: perfumeAtual } = await (supabase as any)
         .from('perfumes')
         .select('quantidade_estoque')
         .eq('id', selectedPerfume.id)
-        .single()
+        .single() as { data: { quantidade_estoque: number } | null }
 
       if (!perfumeAtual || perfumeAtual.quantidade_estoque < qtdNum) {
         toast.error('Estoque insuficiente no momento da confirmação!')
