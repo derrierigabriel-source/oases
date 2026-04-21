@@ -133,25 +133,14 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Card 1: admin vê valor em R$; vendedor vê contagem */}
-          {isAdmin ? (
-            <StatCard
-              title="Valor em estoque"
-              value={formatCurrency(data?.valorEmEstoque ?? 0)}
-              icon={DollarSign}
-              variant="gold"
-              subtitle="total em produtos"
-            />
-          ) : (
-            <StatCard
-              title="Total em estoque"
-              value={data?.totalEstoque ?? 0}
-              icon={Package}
-              subtitle="unidades"
-            />
-          )}
+          <StatCard
+            title="Valor em estoque"
+            value={formatCurrency(data?.valorEmEstoque ?? 0)}
+            icon={DollarSign}
+            variant="gold"
+            subtitle="total em produtos"
+          />
 
-          {/* Card 2: admin vê contagem; vendedor vê unidades disponíveis */}
           <StatCard
             title="Itens em estoque"
             value={data?.totalEstoque ?? 0}

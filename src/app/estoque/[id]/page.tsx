@@ -164,14 +164,21 @@ export default function PerfumeDetailPage() {
           </div>
         </section>
 
-        {/* Simulador de Preço — só para admin e se tiver custo cadastrado */}
-        {isAdmin && perfume.custo != null && (
+        {/* Simulador de Preço — visível para admin */}
+        {isAdmin && (
           <section className="bg-brand-card border border-brand-border rounded-xl p-5 space-y-4">
-            <div className="flex items-center gap-2 text-brand-muted">
-              <TrendingUp size={14} />
-              <h2 className="text-xs font-semibold uppercase tracking-wider">
-                Simulador de Preço
-              </h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-brand-muted">
+                <TrendingUp size={14} />
+                <h2 className="text-xs font-semibold uppercase tracking-wider">
+                  Simulador de Preço
+                </h2>
+              </div>
+              {perfume.custo == null && (
+                <span className="text-[10px] text-brand-muted border border-brand-border rounded px-2 py-0.5">
+                  Cadastre o custo para ver a margem
+                </span>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -179,11 +186,7 @@ export default function PerfumeDetailPage() {
                 <span className="text-brand-muted">Ajuste de preço</span>
                 <span
                   className={`font-semibold tabular-nums ${
-                    ajuste > 0
-                      ? 'text-emerald-400'
-                      : ajuste < 0
-                      ? 'text-red-400'
-                      : 'text-brand-text'
+                    ajuste > 0 ? 'text-emerald-400' : ajuste < 0 ? 'text-red-400' : 'text-brand-text'
                   }`}
                 >
                   {ajuste > 0 ? '+' : ''}{ajuste}%
@@ -208,20 +211,24 @@ export default function PerfumeDetailPage() {
             <div className="bg-brand-surface rounded-xl px-4 py-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-brand-muted">
-                  {ajuste === 0 ? 'Valor atual' : `Valor com ${ajuste > 0 ? '+' : ''}${ajuste}% de ajuste`}
+                  {ajuste === 0 ? 'Valor atual' : `Valor com ${ajuste > 0 ? '+' : ''}${ajuste}%`}
                 </span>
                 <span className="font-bold text-brand-gold text-lg">
                   {formatCurrency(precoSimulado)}
                 </span>
               </div>
-              {margemSimulada !== null && (
+              {margem !== null && ajuste === 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-brand-muted">Margem atual</span>
+                  <span className={`font-semibold ${margem >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {margem.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              {margemSimulada !== null && ajuste !== 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-brand-muted">Margem resultante</span>
-                  <span
-                    className={`font-semibold ${
-                      margemSimulada >= 0 ? 'text-emerald-400' : 'text-red-400'
-                    }`}
-                  >
+                  <span className={`font-semibold ${margemSimulada >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {margemSimulada.toFixed(1)}%
                   </span>
                 </div>
