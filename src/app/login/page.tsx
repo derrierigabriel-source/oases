@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FlaskConical, Mail, Lock } from 'lucide-react'
+import { Gem, Mail, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
@@ -46,30 +46,36 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4 oases-pattern">
+      {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-brand-gold/3 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-brand-gold/4 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-brand-crimson/5 rounded-full blur-[80px]" />
       </div>
 
       <div className="relative w-full max-w-sm">
         {/* Card */}
-        <div className="bg-brand-surface border border-brand-border rounded-2xl p-8 shadow-2xl">
+        <div className="bg-brand-surface border border-brand-border/80 rounded-2xl p-8 shadow-2xl shadow-black/60">
+
+          {/* Ornamental top bar */}
+          <div className="gold-divider mb-8" />
+
           {/* Logo */}
-          <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-brand-gold flex items-center justify-center shadow-lg shadow-brand-gold/20">
-              <FlaskConical size={26} className="text-black" />
+          <div className="flex flex-col items-center gap-4 mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-brand-gold/10 border border-brand-gold/30 flex items-center justify-center">
+              <Gem size={28} className="text-brand-gold" />
             </div>
             <div className="text-center">
-              <h1 className="font-display text-2xl font-bold text-brand-text">
-                Perfumes App
+              <h1 className="font-display text-3xl font-semibold text-brand-gold tracking-widest">
+                OASES
               </h1>
-              <p className="text-sm text-brand-muted mt-1">
-                Gestão de vendas
+              <p className="text-xs text-brand-muted mt-1 tracking-widest uppercase">
+                Gestão de Vendas
               </p>
             </div>
           </div>
+
+          <div className="gold-divider mb-8" />
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
@@ -84,7 +90,7 @@ export default function LoginPage() {
                 autoFocus
               />
               <Mail
-                size={16}
+                size={14}
                 className="absolute right-3 top-[34px] text-brand-muted pointer-events-none"
               />
             </div>
@@ -99,7 +105,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
               />
               <Lock
-                size={16}
+                size={14}
                 className="absolute right-3 top-[34px] text-brand-muted pointer-events-none"
               />
             </div>
@@ -114,8 +120,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-brand-muted text-center mt-6">
-            Acesso restrito. Fale com o administrador.
+          <div className="gold-divider mt-8" />
+
+          <p className="text-xs text-brand-muted text-center mt-4 tracking-wide">
+            Acesso restrito · Fale com o administrador
           </p>
         </div>
       </div>

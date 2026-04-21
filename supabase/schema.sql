@@ -120,20 +120,10 @@ drop policy if exists "Autenticados podem inserir clientes" on clientes;
 drop policy if exists "Autenticados podem atualizar clientes" on clientes;
 drop policy if exists "Autenticados podem deletar clientes" on clientes;
 
--- Admin vê todos; vendedor vê apenas clientes das suas próprias vendas
-create policy "Admin lê todos os clientes" on clientes
-  for select using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
-  );
-
-create policy "Vendedor lê seus clientes" on clientes
-  for select using (
-    exists (
-      select 1 from vendas
-      where vendas.cliente_id = clientes.id
-        and vendas.vendedor_id = auth.uid()
-    )
-  );
+-- Todos os autenticados veem todos os clientes
+-- (restrição de parcelas é feita pelo RLS da tabela parcelas)
+create policy "Autenticados podem ler clientes" on clientes
+  for select using (auth.role() = 'authenticated');
 
 -- Todos os autenticados podem criar clientes (necessário ao registrar uma venda)
 create policy "Autenticados podem inserir clientes" on clientes

@@ -10,24 +10,25 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          bg: '#0f0e0c',
-          surface: '#1a1916',
-          card: '#242220',
-          border: '#2e2c29',
-          gold: '#f59e0b',
-          'gold-dark': '#d97706',
-          'gold-light': '#fcd34d',
-          muted: '#6b6560',
-          text: '#e8e4de',
-          'text-dim': '#a09890',
+          bg: '#09080c',
+          surface: '#110e14',
+          card: '#1a1720',
+          border: '#2a2535',
+          gold: '#c9a84c',
+          'gold-dark': '#a8872e',
+          'gold-light': '#e2c97a',
+          crimson: '#7d1a35',
+          muted: '#7a6e80',
+          text: '#f0e8de',
+          'text-dim': '#b8a9c2',
         },
       },
       fontFamily: {
-        display: ['Playfair Display', 'Georgia', 'serif'],
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Cinzel', 'Georgia', 'serif'],
+        sans: ['Raleway', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
-        'gold-gradient': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        'gold-gradient': 'linear-gradient(135deg, #c9a84c 0%, #a8872e 100%)',
       },
       keyframes: {
         shimmer: {

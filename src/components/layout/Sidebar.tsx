@@ -9,7 +9,7 @@ import {
   Users,
   CreditCard,
   LogOut,
-  FlaskConical,
+  Gem,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -28,24 +28,26 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 h-screen sticky top-0 bg-brand-surface border-r border-brand-border">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 bg-brand-surface border-r border-brand-border oases-pattern">
         {/* Logo */}
-        <div className="px-6 py-6 border-b border-brand-border">
+        <div className="px-6 py-7 border-b border-brand-border/60">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-gold flex items-center justify-center">
-              <FlaskConical size={16} className="text-black" />
+            <div className="w-9 h-9 rounded-lg bg-brand-gold/10 border border-brand-gold/30 flex items-center justify-center">
+              <Gem size={16} className="text-brand-gold" />
             </div>
             <div>
-              <span className="font-display font-semibold text-brand-text text-base leading-none">
-                Perfumes
+              <span className="font-display font-semibold text-brand-gold text-lg tracking-widest leading-none">
+                OASES
               </span>
-              <p className="text-xs text-brand-muted mt-0.5">Gestão de Vendas</p>
+              <p className="text-[10px] text-brand-muted mt-0.5 tracking-wider uppercase">
+                Gestão de Vendas
+              </p>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-5 space-y-0.5">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
@@ -57,44 +59,46 @@ export default function Sidebar() {
                   ${
                     active
                       ? 'bg-brand-gold/10 text-brand-gold border border-brand-gold/20'
-                      : 'text-brand-text-dim hover:text-brand-text hover:bg-brand-card'
+                      : 'text-brand-text-dim hover:text-brand-text hover:bg-brand-card border border-transparent'
                   }
                 `}
               >
-                <Icon size={18} />
+                <Icon size={16} className={active ? 'text-brand-gold' : ''} />
                 {label}
               </Link>
             )
           })}
         </nav>
 
+        <div className="gold-divider mx-4" />
+
         {/* User */}
-        <div className="px-3 py-4 border-t border-brand-border">
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center text-brand-gold text-sm font-semibold">
+        <div className="px-3 py-4">
+          <div className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-lg bg-brand-card/60 border border-brand-border/50">
+            <div className="w-8 h-8 rounded-full bg-brand-gold/15 border border-brand-gold/25 flex items-center justify-center text-brand-gold text-sm font-semibold shrink-0">
               {vendedor?.nome?.charAt(0)?.toUpperCase() ?? '?'}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-brand-text truncate">
-                {vendedor?.nome ?? 'Carregando...'}
+                {vendedor?.nome ?? '—'}
               </p>
-              <p className="text-xs text-brand-muted capitalize">
+              <p className="text-[10px] text-brand-gold/70 capitalize tracking-wider">
                 {vendedor?.perfil ?? ''}
               </p>
             </div>
           </div>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-brand-muted hover:text-red-400 hover:bg-red-900/10 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-brand-muted hover:text-red-400 hover:bg-red-900/10 transition-all border border-transparent"
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
             Sair
           </button>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-brand-surface border-t border-brand-border flex items-center justify-around px-2 py-2 safe-area-pb">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-brand-surface/95 backdrop-blur-sm border-t border-brand-border flex items-center justify-around px-2 py-2">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
@@ -102,12 +106,12 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={`
-                flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all min-w-0
+                flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0
                 ${active ? 'text-brand-gold' : 'text-brand-muted hover:text-brand-text-dim'}
               `}
             >
               <Icon size={20} />
-              <span className="text-[10px] font-medium truncate">{label}</span>
+              <span className="text-[9px] font-medium tracking-wider uppercase truncate">{label}</span>
             </Link>
           )
         })}

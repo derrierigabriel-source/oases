@@ -30,7 +30,7 @@ function formatCurrency(v: number) {
 export default function EstoquePage() {
   const supabase = createClient()
   const router = useRouter()
-  const { isAdmin } = useAuth()
+  const { isAdmin, profileLoading } = useAuth()
   const [perfumes, setPerfumes] = useState<Perfume[]>([])
   const [filtered, setFiltered] = useState<Perfume[]>([])
   const [search, setSearch] = useState('')
@@ -161,8 +161,8 @@ export default function EstoquePage() {
               {perfumes.length} {perfumes.length === 1 ? 'perfume' : 'perfumes'} cadastrados
             </p>
           </div>
-          {isAdmin && (
-            <Button onClick={openNew}>
+          {(profileLoading || isAdmin) && (
+            <Button onClick={openNew} disabled={profileLoading}>
               <Plus size={16} />
               Adicionar
             </Button>

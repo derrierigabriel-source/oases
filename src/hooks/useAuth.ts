@@ -9,7 +9,21 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [vendedor, setVendedor] = useState<Vendedor | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(true)
   const supabase = createClient()
+
+  const fetchVendedor = (userId: string) => {
+    setProfileLoading(true)
+    supabase
+      .from('vendedores')
+      .select('*')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        setVendedor(data)
+        setProfileLoading(false)
+      })
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -17,12 +31,9 @@ export function useAuth() {
       setLoading(false)
 
       if (session?.user) {
-        supabase
-          .from('vendedores')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => setVendedor(data))
+        fetchVendedor(session.user.id)
+      } else {
+        setProfileLoading(false)
       }
     })
 
@@ -32,15 +43,11 @@ export function useAuth() {
 
         if (!session?.user) {
           setVendedor(null)
+          setProfileLoading(false)
           return
         }
 
-        supabase
-          .from('vendedores')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => setVendedor(data))
+        fetchVendedor(session.user.id)
       }
     )
 
@@ -58,6 +65,7 @@ export function useAuth() {
     perfil: vendedor?.perfil ?? null,
     isAdmin: vendedor?.perfil === 'admin',
     loading,
+    profileLoading,
     signOut,
   }
 }

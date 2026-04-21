@@ -1,19 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Raleway:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #0f0e0c;
-  --surface: #1a1916;
-  --card: #242220;
-  --border: #2e2c29;
-  --gold: #f59e0b;
-  --gold-dark: #d97706;
-  --text: #e8e4de;
-  --text-dim: #a09890;
-  --muted: #6b6560;
+  --bg: #09080c;
+  --surface: #110e14;
+  --card: #1a1720;
+  --border: #2a2535;
+  --gold: #c9a84c;
+  --gold-dark: #a8872e;
+  --gold-light: #e2c97a;
+  --crimson: #7d1a35;
+  --text: #f0e8de;
+  --text-dim: #b8a9c2;
+  --muted: #7a6e80;
 }
 
 * {
@@ -26,25 +28,16 @@ html,
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Raleway', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
-}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 /* Focus */
 :focus-visible {
@@ -61,7 +54,12 @@ body {
 }
 
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+/* Geometric diamond pattern for decorative surfaces */
+.oases-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 L44 24 L24 44 L4 24 Z' fill='none' stroke='%23c9a84c' stroke-width='0.4' stroke-opacity='0.12'/%3E%3Cpath d='M24 14 L34 24 L24 34 L14 24 Z' fill='none' stroke='%23c9a84c' stroke-width='0.4' stroke-opacity='0.08'/%3E%3C/svg%3E");
 }
 
 /* Gold shimmer animation */
@@ -73,15 +71,22 @@ body {
 .gold-shimmer {
   background: linear-gradient(
     90deg,
-    #d97706 0%,
-    #f59e0b 25%,
-    #fcd34d 50%,
-    #f59e0b 75%,
-    #d97706 100%
+    #a8872e 0%,
+    #c9a84c 25%,
+    #e2c97a 50%,
+    #c9a84c 75%,
+    #a8872e 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: goldShimmer 3s linear infinite;
+}
+
+/* Ornamental divider */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  opacity: 0.3;
 }
