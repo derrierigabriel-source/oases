@@ -39,7 +39,7 @@ export default function ClientesPage() {
       const { data: clientesRaw } = await supabase
         .from('clientes')
         .select('*')
-        .order('nome')
+        .order('nome') as { data: Cliente[] | null }
 
       if (!clientesRaw) return
 
