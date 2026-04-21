@@ -79,10 +79,17 @@ alter table vendas enable row level security;
 alter table parcelas enable row level security;
 
 -- =============================================
--- HELPER: checar se usuário logado é admin
+-- HELPER: função segura para checar perfil
+-- SECURITY DEFINER bypassa RLS ao ler vendedores
 -- =============================================
--- Usado nas policies como:
---   (select perfil from vendedores where id = auth.uid()) = 'admin'
+create or replace function auth_perfil()
+returns text
+language sql
+security definer
+stable
+as $$
+  select perfil from vendedores where id = auth.uid()
+$$;
 
 -- =============================================
 -- POLICIES — PERFUMES
@@ -99,17 +106,17 @@ create policy "Autenticados podem ler perfumes" on perfumes
 -- Apenas admin pode criar, editar e deletar perfumes
 create policy "Admin pode inserir perfumes" on perfumes
   for insert with check (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 create policy "Admin pode atualizar perfumes" on perfumes
   for update using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 create policy "Admin pode deletar perfumes" on perfumes
   for delete using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 -- =============================================
@@ -135,7 +142,7 @@ create policy "Autenticados podem atualizar clientes" on clientes
 -- Apenas admin pode deletar clientes
 create policy "Admin pode deletar clientes" on clientes
   for delete using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 -- =============================================
@@ -149,7 +156,7 @@ drop policy if exists "Autenticados podem deletar vendas" on vendas;
 -- Admin vê todas; vendedor vê apenas as suas
 create policy "Admin lê todas as vendas" on vendas
   for select using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 create policy "Vendedor lê suas vendas" on vendas
@@ -163,13 +170,13 @@ create policy "Vendedor insere suas vendas" on vendas
 create policy "Vendedor atualiza suas vendas" on vendas
   for update using (
     vendedor_id = auth.uid()
-    or (select perfil from vendedores where id = auth.uid()) = 'admin'
+    or auth_perfil() = 'admin'
   );
 
 -- Apenas admin pode deletar vendas
 create policy "Admin pode deletar vendas" on vendas
   for delete using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 -- =============================================
@@ -183,7 +190,7 @@ drop policy if exists "Autenticados podem deletar parcelas" on parcelas;
 -- Admin vê todas; vendedor vê apenas parcelas das suas vendas
 create policy "Admin lê todas as parcelas" on parcelas
   for select using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 create policy "Vendedor lê suas parcelas" on parcelas
@@ -202,7 +209,7 @@ create policy "Insere parcelas de suas vendas" on parcelas
       select 1 from vendas
       where vendas.id = parcelas.venda_id
         and (vendas.vendedor_id = auth.uid()
-          or (select perfil from vendedores where id = auth.uid()) = 'admin')
+          or auth_perfil() = 'admin')
     )
   );
 
@@ -212,14 +219,14 @@ create policy "Atualiza parcelas de suas vendas" on parcelas
       select 1 from vendas
       where vendas.id = parcelas.venda_id
         and (vendas.vendedor_id = auth.uid()
-          or (select perfil from vendedores where id = auth.uid()) = 'admin')
+          or auth_perfil() = 'admin')
     )
   );
 
 -- Apenas admin pode deletar parcelas
 create policy "Admin pode deletar parcelas" on parcelas
   for delete using (
-    (select perfil from vendedores where id = auth.uid()) = 'admin'
+    auth_perfil() = 'admin'
   );
 
 -- =============================================

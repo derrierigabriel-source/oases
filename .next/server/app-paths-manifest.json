@@ -1,10 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/vendas/page": "app/vendas/page.js",
-  "/estoque/page": "app/estoque/page.js",
   "/estoque/[id]/page": "app/estoque/[id]/page.js",
-  "/clientes/page": "app/clientes/page.js",
-  "/pagamentos/page": "app/pagamentos/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/estoque/page": "app/estoque/page.js"
 }
