@@ -38,9 +38,9 @@ export default function PagamentosPage() {
 
     // Atualizar status de atrasadas automaticamente
     const hoje = new Date().toISOString().split('T')[0]
-    await supabase
+    await (supabase as any)
       .from('parcelas')
-      .update({ status: 'atrasado' } as any)
+      .update({ status: 'atrasado' })
       .eq('status', 'pendente')
       .lt('data_vencimento', hoje)
       .not('data_vencimento', 'is', null)
@@ -72,12 +72,12 @@ export default function PagamentosPage() {
   const marcarPago = async (id: string) => {
     setMarking(id)
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('parcelas')
         .update({
           status: 'pago',
           data_pagamento: new Date().toISOString(),
-        } as any)
+        })
         .eq('id', id)
 
       if (error) throw error

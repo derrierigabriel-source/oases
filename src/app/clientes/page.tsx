@@ -93,11 +93,11 @@ export default function ClientesPage() {
     if (!form.nome.trim()) { toast.error('Informe o nome'); return }
     setSaving(true)
     try {
-      const { error } = await supabase.from('clientes').insert({
+      const { error } = await (supabase as any).from('clientes').insert({
         nome: form.nome.trim(),
         telefone_whatsapp: form.telefone_whatsapp.trim() || null,
         observacoes: form.observacoes.trim() || null,
-      } as any)
+      })
       if (error) throw error
       toast.success('Cliente cadastrado!')
       setModalOpen(false)

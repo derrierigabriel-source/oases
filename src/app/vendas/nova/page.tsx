@@ -103,12 +103,12 @@ export default function NovaVendaPage() {
       // Criar cliente se novo
       let clienteId = selectedCliente?.id
       if (!clienteId) {
-        const { data: novoCliente, error } = await supabase
+        const { data: novoCliente, error } = await (supabase as any)
           .from('clientes')
           .insert({
             nome: novoClienteNome.trim(),
             telefone_whatsapp: novoClienteTel.trim() || null,
-          } as any)
+          })
           .select()
           .single()
         if (error) throw error
@@ -129,7 +129,7 @@ export default function NovaVendaPage() {
       }
 
       // Criar venda
-      const { data: venda, error: vendaError } = await supabase
+      const { data: venda, error: vendaError } = await (supabase as any)
         .from('vendas')
         .insert({
           vendedor_id: user.id,
@@ -142,30 +142,30 @@ export default function NovaVendaPage() {
           forma_pagamento: formaPagamento,
           status_pagamento: formaPagamento === 'a_vista' ? 'pago' : 'pendente',
           observacoes: observacoes.trim() || null,
-        } as any)
+        })
         .select()
         .single()
 
       if (vendaError) throw vendaError
 
       // Decrementar estoque
-      const { error: estoqueError } = await supabase
+      const { error: estoqueError } = await (supabase as any)
         .from('perfumes')
-        .update({ quantidade_estoque: perfumeAtual.quantidade_estoque - qtdNum } as any)
+        .update({ quantidade_estoque: perfumeAtual.quantidade_estoque - qtdNum })
         .eq('id', selectedPerfume.id)
 
       if (estoqueError) throw estoqueError
 
       // Criar parcelas
       if (formaPagamento === 'a_vista') {
-        await supabase.from('parcelas').insert({
+        await (supabase as any).from('parcelas').insert({
           venda_id: venda.id,
           numero_parcela: 1,
           valor: totalVenda,
           data_vencimento: format(new Date(), 'yyyy-MM-dd'),
           data_pagamento: new Date().toISOString(),
           status: 'pago',
-        } as any)
+        })
       } else if (formaPagamento === 'parcelado') {
         const n = parseInt(numParcelas) || 2
         const valorParcela = totalVenda / n
@@ -176,16 +176,16 @@ export default function NovaVendaPage() {
           data_vencimento: format(addMonths(new Date(), i + 1), 'yyyy-MM-dd'),
           status: 'pendente',
         }))
-        await supabase.from('parcelas').insert(parcelas as any)
+        await (supabase as any).from('parcelas').insert(parcelas)
       } else {
         // Fiado
-        await supabase.from('parcelas').insert({
+        await (supabase as any).from('parcelas').insert({
           venda_id: venda.id,
           numero_parcela: 1,
           valor: totalVenda,
           data_vencimento: null,
           status: 'pendente',
-        } as any)
+        })
       }
 
       toast.success('Venda registrada com sucesso!')

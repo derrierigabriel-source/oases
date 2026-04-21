@@ -112,14 +112,14 @@ export default function EstoquePage() {
       }
 
       if (editing) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('perfumes')
-          .update(payload as any)
+          .update(payload)
           .eq('id', editing.id)
         if (error) throw error
         toast.success('Perfume atualizado!')
       } else {
-        const { error } = await supabase.from('perfumes').insert(payload as any)
+        const { error } = await (supabase as any).from('perfumes').insert(payload)
         if (error) throw error
         toast.success('Perfume adicionado!')
       }
@@ -137,9 +137,9 @@ export default function EstoquePage() {
     const perfume = perfumes.find((p) => p.id === id)
     if (!perfume) return
     const nova = Math.max(0, perfume.quantidade_estoque + delta)
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('perfumes')
-      .update({ quantidade_estoque: nova } as any)
+      .update({ quantidade_estoque: nova })
       .eq('id', id)
     if (error) {
       toast.error('Erro ao atualizar estoque')
