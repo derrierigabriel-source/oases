@@ -17,7 +17,7 @@ function formatCurrency(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-interface VendaDetalhe extends Venda {
+interface VendaDetalhe extends Omit<Venda, 'cliente' | 'vendedor'> {
   cliente: { nome: string } | null
   vendedor: { nome: string } | null
 }
