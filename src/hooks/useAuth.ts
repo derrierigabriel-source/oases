@@ -59,11 +59,16 @@ export function useAuth() {
     window.location.href = '/login'
   }
 
+  const isAdmin =
+    vendedor?.perfil === 'admin' ||
+    user?.user_metadata?.perfil === 'admin' ||
+    user?.app_metadata?.perfil === 'admin'
+
   return {
     user,
     vendedor,
-    perfil: vendedor?.perfil ?? null,
-    isAdmin: vendedor?.perfil === 'admin',
+    perfil: vendedor?.perfil ?? (isAdmin ? 'admin' : null),
+    isAdmin,
     loading,
     profileLoading,
     signOut,
