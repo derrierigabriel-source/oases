@@ -36,12 +36,12 @@ export default function ClientesPage() {
 
   const load = async () => {
     try {
-      const { data: clientesRaw } = await supabase
+      const { data: clientesRawData } = await supabase
         .from('clientes')
         .select('*')
-        .order('nome') as { data: Cliente[] | null }
+        .order('nome')
 
-      if (!clientesRaw) return
+      const clientesRaw = (clientesRawData ?? []) as Cliente[]
 
       // Buscar saldos
       const { data: parcelas } = await supabase
