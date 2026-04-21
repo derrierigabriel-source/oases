@@ -97,7 +97,7 @@ export default function ClientesPage() {
         nome: form.nome.trim(),
         telefone_whatsapp: form.telefone_whatsapp.trim() || null,
         observacoes: form.observacoes.trim() || null,
-      })
+      } as any)
       if (error) throw error
       toast.success('Cliente cadastrado!')
       setModalOpen(false)

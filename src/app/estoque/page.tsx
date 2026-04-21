@@ -139,7 +139,7 @@ export default function EstoquePage() {
     const nova = Math.max(0, perfume.quantidade_estoque + delta)
     const { error } = await supabase
       .from('perfumes')
-      .update({ quantidade_estoque: nova })
+      .update({ quantidade_estoque: nova } as any)
       .eq('id', id)
     if (error) {
       toast.error('Erro ao atualizar estoque')

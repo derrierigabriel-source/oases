@@ -40,7 +40,7 @@ export default function PagamentosPage() {
     const hoje = new Date().toISOString().split('T')[0]
     await supabase
       .from('parcelas')
-      .update({ status: 'atrasado' })
+      .update({ status: 'atrasado' } as any)
       .eq('status', 'pendente')
       .lt('data_vencimento', hoje)
       .not('data_vencimento', 'is', null)
@@ -77,7 +77,7 @@ export default function PagamentosPage() {
         .update({
           status: 'pago',
           data_pagamento: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', id)
 
       if (error) throw error
