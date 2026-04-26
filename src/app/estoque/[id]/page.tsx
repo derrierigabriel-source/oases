@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ChevronLeft, Package, DollarSign, TrendingUp } from 'lucide-react'
-import { format } from 'date-fns'
+import { ChevronLeft, Package, DollarSign, TrendingUp, Truck, ShoppingCart, Archive } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase'
-import { Perfume, Venda } from '@/lib/types'
+import { Perfume, Venda, Lote } from '@/lib/types'
 import { useAuth } from '@/hooks/useAuth'
 import AppLayout from '@/components/layout/AppLayout'
 import Badge from '@/components/ui/Badge'
@@ -30,6 +30,7 @@ export default function PerfumeDetailPage() {
   const id = params.id as string
 
   const [perfume, setPerfume] = useState<Perfume | null>(null)
+  const [lote, setLote] = useState<Lote | null>(null)
   const [vendas, setVendas] = useState<VendaDetalhe[]>([])
   const [loading, setLoading] = useState(true)
   const [ajuste, setAjuste] = useState(0)
@@ -49,8 +50,18 @@ export default function PerfumeDetailPage() {
             .eq('perfume_id', id)
             .order('data_venda', { ascending: false }),
         ])
-        setPerfume(p)
+        setPerfume(p as Perfume | null)
         setVendas((v as VendaDetalhe[]) ?? [])
+
+        // Busca lote se existir
+        if ((p as Perfume | null)?.lote_id) {
+          const { data: loteData } = await (supabase as any)
+            .from('lotes')
+            .select('*')
+            .eq('id', (p as Perfume).lote_id)
+            .single()
+          setLote(loteData as Lote | null)
+        }
       } catch {
         // erro de rede
       } finally {
@@ -163,6 +174,55 @@ export default function PerfumeDetailPage() {
             )}
           </div>
         </section>
+
+        {/* Lote de Compra — visível para admin */}
+        {isAdmin && lote && (
+          <section className="bg-brand-card border border-brand-border rounded-xl p-5 space-y-3">
+            <div className="flex items-center gap-2 text-brand-muted">
+              <Archive size={14} />
+              <h2 className="text-xs font-semibold uppercase tracking-wider">Lote de Compra</h2>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-brand-muted mb-1">Data</p>
+                <p className="text-sm font-medium text-brand-text">
+                  {format(parseISO(lote.data_compra), 'dd/MM/yyyy', { locale: ptBR })}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-brand-muted mb-1">Dólar</p>
+                <p className="text-sm font-medium text-brand-gold">
+                  R$ {Number(lote.dolar).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-brand-muted mb-1">Aquisição</p>
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  {lote.entrega ? (
+                    <><Truck size={13} className="text-amber-400" /><span className="text-amber-400">Entrega</span></>
+                  ) : (
+                    <><ShoppingCart size={13} className="text-emerald-400" /><span className="text-emerald-400">Pessoal</span></>
+                  )}
+                </div>
+              </div>
+              {lote.entrega && lote.taxa_entrega != null && (
+                <div>
+                  <p className="text-xs text-brand-muted mb-1">Taxa nota fiscal</p>
+                  <p className="text-sm font-medium text-amber-400">+{lote.taxa_entrega}%</p>
+                </div>
+              )}
+              {perfume.custo_dolar != null && (
+                <div>
+                  <p className="text-xs text-brand-muted mb-1">Custo em dólar</p>
+                  <p className="text-sm font-medium text-brand-text">
+                    US$ {Number(perfume.custo_dolar).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Simulador de Preço — visível para admin */}
         {isAdmin && (

@@ -19,7 +19,10 @@ export function useAuth() {
       .select('*')
       .eq('id', userId)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[useAuth] fetchVendedor error:', error.code, error.message, 'userId:', userId)
+        }
         setVendedor(data)
         setProfileLoading(false)
       })

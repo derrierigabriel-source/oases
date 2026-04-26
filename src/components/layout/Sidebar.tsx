@@ -10,20 +10,24 @@ import {
   CreditCard,
   LogOut,
   Gem,
+  Archive,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/estoque', label: 'Estoque', icon: Package },
-  { href: '/vendas', label: 'Vendas', icon: ShoppingBag },
-  { href: '/clientes', label: 'Clientes', icon: Users },
-  { href: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
+  { href: '/estoque', label: 'Estoque', icon: Package, adminOnly: false },
+  { href: '/vendas', label: 'Vendas', icon: ShoppingBag, adminOnly: false },
+  { href: '/clientes', label: 'Clientes', icon: Users, adminOnly: false },
+  { href: '/pagamentos', label: 'Pagamentos', icon: CreditCard, adminOnly: false },
+  { href: '/lotes', label: 'Lotes', icon: Archive, adminOnly: true },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { user, vendedor, signOut } = useAuth()
+  const { user, vendedor, isAdmin, signOut } = useAuth()
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   return (
     <>
@@ -48,7 +52,7 @@ export default function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-5 space-y-0.5">
-          {navItems.map(({ href, label, icon: Icon }) => {
+          {visibleItems.map(({ href, label, icon: Icon, adminOnly }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
               <Link
@@ -65,6 +69,11 @@ export default function Sidebar() {
               >
                 <Icon size={16} className={active ? 'text-brand-gold' : ''} />
                 {label}
+                {adminOnly && (
+                  <span className="ml-auto text-[9px] uppercase tracking-wider text-brand-gold/40 font-medium">
+                    admin
+                  </span>
+                )}
               </Link>
             )
           })}
@@ -99,7 +108,7 @@ export default function Sidebar() {
 
       {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-brand-surface/95 backdrop-blur-sm border-t border-brand-border flex items-center justify-around px-2 py-2">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {visibleItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link

@@ -3,16 +3,18 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { Plus, Search, Pencil, Minus, Package } from 'lucide-react'
+import { Plus, Search, Pencil, Minus, Package, DollarSign } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
-import { Perfume } from '@/lib/types'
+import { Perfume, Lote } from '@/lib/types'
 import { useAuth } from '@/hooks/useAuth'
 import AppLayout from '@/components/layout/AppLayout'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 const emptyForm = {
   nome: '',
@@ -20,11 +22,21 @@ const emptyForm = {
   tamanho_ml: '',
   quantidade_estoque: '',
   preco_base: '',
-  custo: '',
+  custo: '',         // BRL — usado quando NÃO há lote selecionado
+  custo_dolar: '',   // USD — usado quando há lote selecionado
+  lote_id: '',
 }
 
 function formatCurrency(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function calcularCustoReal(custoDolar: number, lote: Lote): number {
+  const base = custoDolar * lote.dolar
+  if (lote.entrega && lote.taxa_entrega) {
+    return base * (1 + lote.taxa_entrega / 100)
+  }
+  return base
 }
 
 export default function EstoquePage() {
@@ -33,6 +45,7 @@ export default function EstoquePage() {
   const { isAdmin, profileLoading } = useAuth()
   const [perfumes, setPerfumes] = useState<Perfume[]>([])
   const [filtered, setFiltered] = useState<Perfume[]>([])
+  const [lotes, setLotes] = useState<Lote[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -40,16 +53,23 @@ export default function EstoquePage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
+  const loteAtual = lotes.find((l) => l.id === form.lote_id) ?? null
+
+  const custoPreviewBRL =
+    loteAtual && form.custo_dolar
+      ? calcularCustoReal(parseFloat(form.custo_dolar), loteAtual)
+      : null
+
   const load = async () => {
     try {
-      const { data } = await supabase
-        .from('perfumes')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome')
-      setPerfumes((data ?? []) as Perfume[])
+      const [{ data: perfumesData }, { data: lotesData }] = await Promise.all([
+        supabase.from('perfumes').select('*').eq('ativo', true).order('nome'),
+        (supabase as any).from('lotes').select('*').order('data_compra', { ascending: false }),
+      ])
+      setPerfumes((perfumesData ?? []) as Perfume[])
+      setLotes((lotesData ?? []) as Lote[])
     } catch {
-      // erro de rede (ex: Supabase pausado)
+      // erro de rede
     } finally {
       setLoading(false)
     }
@@ -86,7 +106,9 @@ export default function EstoquePage() {
       tamanho_ml: String(p.tamanho_ml),
       quantidade_estoque: String(p.quantidade_estoque),
       preco_base: String(p.preco_base),
-      custo: String(p.custo ?? ''),
+      custo: p.lote_id ? '' : String(p.custo ?? ''),
+      custo_dolar: p.custo_dolar != null ? String(p.custo_dolar) : '',
+      lote_id: p.lote_id ?? '',
     })
     setModalOpen(true)
   }
@@ -106,8 +128,14 @@ export default function EstoquePage() {
         tamanho_ml: parseInt(form.tamanho_ml),
         quantidade_estoque: parseInt(form.quantidade_estoque) || 0,
         preco_base: parseFloat(form.preco_base),
+        lote_id: form.lote_id || null,
+        custo_dolar: form.custo_dolar ? parseFloat(form.custo_dolar) : null,
       }
-      if (form.custo !== '') {
+
+      // Calcula custo em BRL
+      if (form.lote_id && form.custo_dolar && loteAtual) {
+        payload.custo = calcularCustoReal(parseFloat(form.custo_dolar), loteAtual)
+      } else if (!form.lote_id && form.custo !== '') {
         payload.custo = parseFloat(form.custo)
       }
 
@@ -298,29 +326,91 @@ export default function EstoquePage() {
               onChange={(e) => setForm({ ...form, quantidade_estoque: e.target.value })}
             />
           </div>
-          <div className={`grid gap-3 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <Input
-              label="Valor de Venda (R$) *"
-              type="number"
-              placeholder="0,00"
-              min="0"
-              step="0.01"
-              value={form.preco_base}
-              onChange={(e) => setForm({ ...form, preco_base: e.target.value })}
-              required
-            />
-            {isAdmin && (
-              <Input
-                label="Custo (R$)"
-                type="number"
-                placeholder="0,00"
-                min="0"
-                step="0.01"
-                value={form.custo}
-                onChange={(e) => setForm({ ...form, custo: e.target.value })}
-              />
-            )}
-          </div>
+
+          <Input
+            label="Valor de Venda (R$) *"
+            type="number"
+            placeholder="0,00"
+            min="0"
+            step="0.01"
+            value={form.preco_base}
+            onChange={(e) => setForm({ ...form, preco_base: e.target.value })}
+            required
+          />
+
+          {/* Custo — só para admin */}
+          {isAdmin && (
+            <div className="space-y-3 pt-1 border-t border-brand-border">
+              <p className="text-xs font-medium text-brand-muted uppercase tracking-wider pt-1">
+                Custo (admin)
+              </p>
+
+              {/* Seletor de Lote */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-brand-text-dim">Lote de compra</label>
+                <select
+                  value={form.lote_id}
+                  onChange={(e) => setForm({ ...form, lote_id: e.target.value, custo_dolar: '', custo: '' })}
+                  className="w-full px-3 py-2.5 rounded-lg text-sm bg-brand-card border border-brand-border text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold/50"
+                >
+                  <option value="">— Sem lote (custo manual em R$) —</option>
+                  {lotes.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {format(parseISO(l.data_compra), 'dd/MM/yyyy', { locale: ptBR })}
+                      {' — '}
+                      US$ 1 = R$ {Number(l.dolar).toFixed(2)}
+                      {l.entrega ? ` + ${l.taxa_entrega}% entrega` : ' (pessoal)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Custo em dólar — quando lote selecionado */}
+              {form.lote_id ? (
+                <div className="space-y-2">
+                  <Input
+                    label="Custo em dólar (US$)"
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    value={form.custo_dolar}
+                    onChange={(e) => setForm({ ...form, custo_dolar: e.target.value })}
+                    hint={
+                      loteAtual
+                        ? loteAtual.entrega
+                          ? `Câmbio R$ ${Number(loteAtual.dolar).toFixed(2)} + ${loteAtual.taxa_entrega}% taxa de entrega`
+                          : `Câmbio R$ ${Number(loteAtual.dolar).toFixed(2)} · sem taxa de entrega`
+                        : undefined
+                    }
+                  />
+                  {custoPreviewBRL !== null && (
+                    <div className="flex items-center justify-between bg-brand-surface rounded-lg px-3 py-2.5 border border-brand-border">
+                      <div className="flex items-center gap-2 text-brand-muted text-sm">
+                        <DollarSign size={13} />
+                        Custo calculado em R$
+                      </div>
+                      <span className="font-semibold text-brand-gold text-sm">
+                        {formatCurrency(custoPreviewBRL)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Custo manual em BRL — quando sem lote */
+                <Input
+                  label="Custo (R$)"
+                  type="number"
+                  placeholder="0,00"
+                  min="0"
+                  step="0.01"
+                  value={form.custo}
+                  onChange={(e) => setForm({ ...form, custo: e.target.value })}
+                />
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"

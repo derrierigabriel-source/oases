@@ -1,3 +1,13 @@
+export interface Lote {
+  id: string
+  data_compra: string
+  dolar: number
+  entrega: boolean
+  taxa_entrega: number | null
+  observacoes: string | null
+  criado_em: string
+}
+
 export interface Perfume {
   id: string
   nome: string
@@ -6,10 +16,13 @@ export interface Perfume {
   quantidade_estoque: number
   preco_base: number
   custo: number | null
+  custo_dolar: number | null
+  lote_id: string | null
   foto_url: string | null
   quantidade_minima_alerta: number
   ativo: boolean
   criado_em: string
+  lote?: Lote
 }
 
 export interface Vendedor {
