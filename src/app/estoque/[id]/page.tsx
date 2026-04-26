@@ -50,15 +50,16 @@ export default function PerfumeDetailPage() {
             .eq('perfume_id', id)
             .order('data_venda', { ascending: false }),
         ])
-        setPerfume(p as Perfume | null)
+        const perfumeData = p as Perfume | null
+        setPerfume(perfumeData)
         setVendas((v as VendaDetalhe[]) ?? [])
 
         // Busca lote se existir
-        if ((p as Perfume | null)?.lote_id) {
+        if (perfumeData?.lote_id) {
           const { data: loteData } = await (supabase as any)
             .from('lotes')
             .select('*')
-            .eq('id', (p as Perfume).lote_id)
+            .eq('id', perfumeData.lote_id)
             .single()
           setLote(loteData as Lote | null)
         }
