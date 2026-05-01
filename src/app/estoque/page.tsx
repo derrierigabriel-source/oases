@@ -339,7 +339,14 @@ export default function EstoquePage() {
           />
 
           {/* Custo — só para admin */}
-          {isAdmin && (
+          {profileLoading && (
+            <div className="space-y-3 pt-1 border-t border-brand-border animate-pulse">
+              <div className="h-4 w-24 bg-brand-card rounded mt-1" />
+              <div className="h-10 bg-brand-card rounded-lg" />
+              <div className="h-10 bg-brand-card rounded-lg" />
+            </div>
+          )}
+          {!profileLoading && isAdmin && (
             <div className="space-y-3 pt-1 border-t border-brand-border">
               <p className="text-xs font-medium text-brand-muted uppercase tracking-wider pt-1">
                 Custo (admin)
