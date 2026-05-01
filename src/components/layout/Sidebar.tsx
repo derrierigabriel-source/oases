@@ -25,9 +25,9 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { user, vendedor, isAdmin, signOut } = useAuth()
+  const { user, vendedor, isAdmin, profileLoading, signOut } = useAuth()
 
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin || profileLoading)
 
   return (
     <>
